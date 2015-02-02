@@ -275,6 +275,7 @@ resources:
             - coms
             - public_key
         state_repos: |
+          https://github.com/rcbops/hadoop-formula.git
           https://github.com/rcbops/elk-formula.git
         kibana_passwd:
           - get_param: kibana-passwd
@@ -331,6 +332,7 @@ resources:
           base:
             '*':
               - app
+              - base-hardening-formula
             'roles:elasticsearch':
               - match: grain
               - elk
@@ -352,6 +354,45 @@ resources:
             network.ip_addrs: [eth0]
             network.interfaces: []
           mine_interval: 1
+
+        /srv/pillar/base-hardening-formula.sls: |
+          user-ports:
+            ssh:
+              chain: INPUT
+              proto: tcp
+              dport: 22
+            salt-master:
+              chain: INPUT
+              proto: tcp
+              dport: 4505
+            salt-minion:
+              chain: INPUT
+              proto: tcp
+              dport: 4506
+            https:
+              chain: INPUT
+              proto: tcp
+              dport: 443
+            logstash:
+              chain: INPUT
+              proto: tcp
+              dport: 8080
+            http:
+              chain: INPUT
+              proto: tcp
+              dport: 80
+            elastic-listen:
+              chain: INPUT
+              proto: tcp
+              dport: 9300
+            elastic-listen-2:
+              chain: INPUT
+              proto: tcp
+              dport: 9300
+            kibana:
+              chain: INPUT
+              proto: tcp
+              dport: 5544
 
       networks:
         - port:
@@ -503,6 +544,7 @@ resources:
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
         salt '*' state.highstate
+        salt -t 90 -l debug '*' state.sls base-hardening-formula.base-hardening-formula
         touch ${prefix}.ran
 
   deploy:
@@ -516,7 +558,6 @@ resources:
       - deploy-salt-master
       - minion-group-elk
       - deploy-haproxy
-
 
 outputs:
   master-ip:
